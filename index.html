@@ -80,7 +80,23 @@ button:focus-visible{outline:4px solid #2f80ed;outline-offset:2px}
 #err.ok{background:var(--cream);color:var(--ink)}
 #sel{justify-content:safe center;gap:clamp(12px,3vh,28px);padding-bottom:max(48px,calc(env(safe-area-inset-bottom) + 36px))}
 #sel,#res{pointer-events:auto;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
-#res{justify-content:safe center}
+#res,#lobby{justify-content:safe center}
+#lobby{pointer-events:auto;overflow-y:auto;touch-action:pan-y}
+#lobby .panel{width:min(620px,100%)}
+.lbT{margin:0 0 4px;font-size:26px;text-align:center}.lbT b{font-size:42px;letter-spacing:.12em;color:var(--pink);font-variant-numeric:tabular-nums}
+#lbPlayers{list-style:none;margin:0 0 10px;padding:0}
+#lbPlayers li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:12px;font-weight:800;font-size:17px}
+#lbPlayers li:nth-child(odd){background:rgba(43,26,16,.06)}#lbPlayers li.me{background:var(--sun)}
+#lbPlayers .dot{width:22px;height:22px;border-radius:50%;border:3px solid var(--ink);flex:none}
+#lbAi{display:flex;gap:10px;align-items:center;justify-content:center;font-weight:800;margin-bottom:6px}#lbAi b{font-size:24px;min-width:1.2em;text-align:center}
+#lbAi .chip{min-width:44px;min-height:40px;font-size:20px;cursor:pointer;font-family:inherit}
+#lbAi.dis .chip{display:none}
+.modes{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
+.modes .alt{font-size:18px}
+@media(max-width:600px){.modes{grid-template-columns:1fr 1fr}.modes #start{grid-column:1/-1}}
+#joinForm{display:flex;gap:8px;margin-top:10px}
+#joinForm input{flex:1;font:inherit;font-size:24px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;text-align:center;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;min-height:52px;background:#fff;color:var(--ink)}
+#joinForm .go{width:auto;padding:8px 22px}
 #help summary{cursor:pointer;font-weight:800;font-size:15px;min-height:36px;display:flex;align-items:center;margin-top:8px}
 @media (max-height:560px) and (orientation:landscape){
   .ov h1{font-size:30px;-webkit-text-stroke-width:3px;text-shadow:0 3px 0 var(--ink);margin:0}
@@ -88,7 +104,8 @@ button:focus-visible{outline:4px solid #2f80ed;outline-offset:2px}
   #sel .panel{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:8px 14px;align-items:stretch;padding:10px;width:min(880px,100%);border-radius:20px}
   #sel .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   #sel .card{padding:4px 2px;font-size:13px}#sel .card .dot{width:22px;height:22px;margin-bottom:2px}
-  #start{grid-column:2;grid-row:1;height:100%}
+  .modes{grid-column:2;grid-row:1;grid-template-columns:1fr 1fr;align-content:stretch}.modes #start{grid-column:1/-1}
+  #joinForm{grid-column:1/-1;margin-top:0}
   #help{grid-column:1/-1}#help summary{margin-top:0}
   #res h2{font-size:22px;margin-bottom:6px}#resList li{padding:2px 10px;font-size:15px}#resList{margin-bottom:8px}
   .go{min-height:48px;font-size:22px}}
@@ -165,10 +182,22 @@ button:focus-visible{outline:4px solid #2f80ed;outline-offset:2px}
       <span><b>↩︎</b>按住剎車再用大便，就會往後丟</span>
     </div>
     <p class="hint" id="hint"></p></details>
-    <button class="go" id="start" type="button">開始比賽！</button>
+    <div class="modes"><button class="go" id="start" type="button">單人開始！</button>
+      <button class="go alt" id="mkRoom" type="button">建立房間</button><button class="go alt" id="joinRoom" type="button">加入房間</button></div>
+    <form id="joinForm" class="hidden"><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="輸入 4 碼房號" aria-label="房號"><button class="go" type="submit">加入</button></form>
   </div>
 </div>
 
+<div class="ov pad hidden" id="lobby"><div class="panel">
+  <h2 class="lbT">房號 <b id="lbCode">----</b></h2>
+  <p class="hint" id="lbHint"></p>
+  <ul id="lbPlayers"></ul>
+  <div id="lbAi">電腦對手 <button class="chip" id="aiMinus" type="button" aria-label="減少電腦">－</button><b id="aiN">2</b><button class="chip" id="aiPlus" type="button" aria-label="增加電腦">＋</button></div>
+  <p class="hint">選你的動物：</p>
+  <div class="cards" id="lbCards"></div>
+  <div class="row" style="margin-top:12px"><button class="go" id="lbStart" type="button">開始比賽！</button><button class="go alt" id="lbShare" type="button">分享邀請</button></div>
+  <button class="go alt" id="lbLeave" type="button" style="margin-top:10px">離開房間</button>
+</div></div>
 <div class="ov pad hidden" id="res">
   <div class="panel"><h2 id="resTitle">比賽結果</h2><ol id="resList"></ol>
     <div class="row"><button class="go" id="again" type="button">再跑一次</button><button class="go alt" id="change" type="button">換角色</button></div></div>
@@ -362,25 +391,31 @@ function sPick(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>sBeep(f,0.08,'
 /* ---------- game state ---------- */
 const ITEMS={banana:['🍌','香蕉皮'],poop:['💩','大便飛彈'],poop3:['💩','大便散彈 ×3'],fart:['💨','屁屁火箭'],mega:['🤢','超級臭屁彈'],mom:['😡','陳媽媽爆氣'],poke:['👉','戳腰子'],brat:['😜','智障小孩耍皮']};
 const ICONS=Object.values(ITEMS).map(v=>v[0]);
+let hzSeq=0,net=null;const netHz=new Map();
 let state='select',karts=[],hz=[],fx=[],player=null,selIdx=0,raceT=0,countT=0,lastCount=4,clock=0,shake=0;
 const keys={},camPos=new THREE.Vector3();
 const vol=k=>k.isPlayer?1:(player?Math.max(0,1-Math.hypot(k.x-player.x,k.z-player.z)/100):0);
 
 function newKart(a,idx,lat,isP){const v=makeKart(a),p=P[idx],n=NR[idx],t=T[idx];
   const k={a,...v,x:p.x+n.x*lat,z:p.z+n.z*lat,h:Math.atan2(t.x,t.z),mv:Math.atan2(t.x,t.z),padCD:0,zone:'grass',mudCD:0,speed:0,idx,lap:0,best:0,item:null,pending:null,rolling:0,useT:0,boostT:0,fartT:0,puffT:0,slowT:0,gasCD:0,immT:0,stunT:0,spinT:0,spinA:0,hatT:0,y:0,vy:0,
-    isPlayer:isP,finished:false,ft:0,skill:0.9+Math.random()*0.08,lane:(Math.random()-0.5)*8,laneT:2,prog:0,rank:0};
+    isPlayer:isP,nm:a.name,kid:0,owner:'host',human:false,remote:false,finished:false,ft:0,skill:0.9+Math.random()*0.08,lane:(Math.random()-0.5)*8,laneT:2,prog:0,rank:0};
   v.root.position.set(k.x,0,k.z);v.root.rotation.y=k.h;return k;}
-function clearRace(){for(const k of karts)scene.remove(k.root);for(const h of hz){scene.remove(h.mesh);if(h.own)h.mesh.material.dispose();}for(const f of fx)scene.remove(f.m);karts=[];hz=[];fx=[];player=null;for(const b of boxes){b.t=0;b.m.visible=true;}}
+function clearRace(){for(const k of karts)scene.remove(k.root);for(const h of hz){scene.remove(h.mesh);if(h.own)h.mesh.material.dispose();}for(const f of fx)scene.remove(f.m);karts=[];hz=[];fx=[];player=null;for(const id of [...netHz.keys()])dropNetHz(id);for(const b of boxes){b.t=0;b.m.visible=true;}}
 function buildPreview(){clearRace();player=newKart(ANIMALS[selIdx],24,0,true);karts=[player];}
-function startRace(){clearRace();initAudio();
-  const others=ANIMALS.filter((_,i)=>i!==selIdx);let ai=0;const PS=4;
-  for(let s=0;s<6;s++){const a=s===PS?ANIMALS[selIdx]:others[ai++];const row=s>>1,idx=(N-6-row*8+N)%N,lat=s%2?-4.5:4.5;
-    const k=newKart(a,idx,lat,s===PS);karts.push(k);if(k.isPlayer)player=k;}
+function startRace(roster){clearRace();initAudio();
+  if(!roster){const others=ANIMALS.map((_,i)=>i).filter(i=>i!==selIdx);roster=[];for(let s=0;s<6;s++)roster.push(s===4?{animal:selIdx,owner:'host',human:true,me:true}:{animal:others.shift(),owner:'host',human:false});}
+  const me=myId();
+  roster.forEach((r,s)=>{const a=ANIMALS[r.animal]||ANIMALS[0];const row=s>>1,idx=(N-6-row*8+N)%N,lat=s%2?-4.5:4.5;
+    const mine=net?(!!r.human&&r.owner===me):!!r.me;
+    const k=newKart(a,idx,lat,mine);k.kid=s;k.owner=r.owner;k.human=!!r.human;k.nm=r.name||a.name;
+    k.remote=net?(net.host?r.owner!=='host':!mine):false;
+    karts.push(k);if(mine)player=k;});
+  $('#lobby').classList.add('hidden');
   camPos.set(player.x-Math.sin(player.h)*13,6.5,player.z-Math.cos(player.h)*13);
   $('#joyHint').classList.remove('fade');
   state='countdown';countT=3.999;lastCount=4;raceT=0;
   $('#sel').classList.add('hidden');$('#res').classList.add('hidden');$('#hud').classList.remove('hidden');$('#tc').classList.toggle('hidden',!touchMode);}
-function showSelect(){state='select';buildPreview();$('#sel').classList.remove('hidden');$('#res').classList.add('hidden');$('#hud').classList.add('hidden');$('#tc').classList.add('hidden');}
+function showSelect(){state='select';buildPreview();$('#lobby').classList.add('hidden');$('#sel').classList.remove('hidden');$('#res').classList.add('hidden');$('#hud').classList.add('hidden');$('#tc').classList.add('hidden');}
 
 function nearest(x,z,i0){let best=i0,bd=1e18;for(let j=-20;j<=35;j++){const i=(i0+j+N)%N,dx=x-P[i].x,dz=z-P[i].z,d=dx*dx+dz*dz;if(d<bd){bd=d;best=i;}}return best;}
 function rubber(k){if(!player)return 1;return clamp(1+(player.prog-k.prog)/N*0.14,0.9,1.13);}
@@ -407,25 +442,28 @@ function aiItem(k,dt){k.useT-=dt;if(k.useT>0)return;const it=k.item;
   if(it==='mom'||it==='poke'||it==='brat')return useItem(k);
   if(it==='mega'){let c=0;for(const o of karts)if(o!==k&&Math.hypot(o.x-k.x,o.z-k.z)<24)c++;if(c>0||k.useT<-7)useItem(k);}}
 
-function addHz(type,mesh,x,z,owner,o={}){mesh.position.set(x,o.y||0,z);scene.add(mesh);const h={type,mesh,x,z,owner,age:0,y:o.y||0,vx:o.vx||0,vz:o.vz||0,vy:o.vy||0,life:o.life,maxLife:o.life,r:o.r||2,size:o.size||1,home:!!o.home,own:!!o.own};hz.push(h);return h;}
+function addHz(type,mesh,x,z,owner,o={}){mesh.position.set(x,o.y||0,z);scene.add(mesh);const h={id:++hzSeq,type,mesh,x,z,owner,age:0,y:o.y||0,vx:o.vx||0,vz:o.vz||0,vy:o.vy||0,life:o.life,maxLife:o.life,r:o.r||2,size:o.size||1,home:!!o.home,own:!!o.own};hz.push(h);return h;}
 function spawnGas(x,z,owner,size,life){const m=new THREE.Mesh(SPH,new THREE.MeshLambertMaterial({color:Math.random()<0.5?0x9bd14a:0xb5d94a,transparent:true,opacity:0.5,depthWrite:false}));
   addHz('gas',m,x,z,owner,{y:1.2,life,size,r:size*1.4,own:true});}
 const RINGG=new THREE.RingGeometry(0.85,1.15,48);
+function ringAt(x,z){const ring=new THREE.Mesh(RINGG,new THREE.MeshBasicMaterial({color:0x9bd14a,transparent:true,opacity:0.7,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(x,0.8,z);scene.add(ring);fx.push({m:ring,t:0,dur:0.8});}
 function megaFart(k){const v=vol(k);sFart(1.8,0.55,Math.min(1,v*1.3));
-  const ring=new THREE.Mesh(RINGG,new THREE.MeshBasicMaterial({color:0x9bd14a,transparent:true,opacity:0.7,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(k.x,0.8,k.z);scene.add(ring);fx.push({m:ring,t:0,dur:0.8});
+  ringAt(k.x,k.z);bcast({t:'fx',k:'ring',x:k.x,z:k.z});
   for(let i=0;i<14;i++){const a=i/14*Math.PI*2;spawnGas(k.x+Math.sin(a)*7,k.z+Math.cos(a)*7,k,2.4,2.6);}
   let hit=0;for(const o of karts){if(o!==k&&Math.hypot(o.x-k.x,o.z-k.z)<30){hitKart(o,'mega',k);hit++;}}
-  if(k.isPlayer){flash('#gas');toast(hit?`超級臭屁！熏飛 ${hit} 隻！`:'超級臭屁！旁邊沒人…');}}
+  const msg=hit?`超級臭屁！熏飛 ${hit} 隻！`:'超級臭屁！旁邊沒人…';if(k.isPlayer){flash('#gas');toast(msg);}else if(k.remote&&k.human)sendTo(k.owner,{t:'toast',text:msg});}
 /* 陳媽媽爆氣：台詞改這裡（可放多句，會隨機挑一句） */
 const MOM_LINES=['我要斷網了！'];
 let momTO;
 function momRage(k){const line=MOM_LINES[Math.random()*MOM_LINES.length|0];
-  for(const o of karts){if(o===k||o.immT>0)continue;o.stunT=2;o.boostT=0;o.fartT=0;}
+  for(const o of karts){if(o!==k)hitKart(o,'stun',k);}
+  bcast({t:'fx',k:'mom',line,kid:k.kid});momShow(line,k);}
+function momShow(line,k){
   $('#momSay').textContent=line;$('#mom').classList.add('on');$('#rage').classList.add('on');shake=0.6;
   clearTimeout(momTO);momTO=setTimeout(()=>{$('#mom').classList.remove('on');$('#rage').classList.remove('on');},2300);
   sRoar();
   try{if(!muted&&window.speechSynthesis){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(line);u.lang='zh-TW';u.pitch=1.5;u.rate=1.15;u.volume=1;speechSynthesis.speak(u);}}catch(_){}
-  toast(k.isPlayer?'陳媽媽出動！全場定格！':`${k.a.name}叫來了陳媽媽！`);}
+  toast(k.isPlayer?'陳媽媽出動！全場定格！':`${k.nm}叫來了陳媽媽！`);}
 function makeFinger(){const g=new THREE.Group(),skin=0xffd7b5;
   const f=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,3.2,12),M(skin));f.rotation.x=Math.PI/2;f.position.z=1.6;g.add(f);
   g.add(sph(skin,0.45,0,0,3.2));g.add(sph(0xfff4f4,1,0,0.28,3.15,0.32,0.12,0.36));
@@ -434,10 +472,15 @@ function makeFinger(){const g=new THREE.Group(),skin=0xffd7b5;
   g.scale.setScalar(1.5);return g;}
 function pokeKidney(k){const list=order();const tg=list[0]!==k?list[0]:list[1];if(!tg)return;
   const h=addHz('poke',makeFinger(),k.x,k.z,k,{y:4,life:10,r:3});h.tg=tg;h.sp=Math.max(k.speed,0)+70;sBoing(vol(k)*0.6,0.7);
-  if(k.isPlayer)toast(`戳腰子出動！目標：${tg.a.name}`);else if(tg.isPlayer)toast(`${k.a.name}要戳你腰子！快跑！`);}
-function useItem(k){const it=k.item;if(!it||k.rolling>0)return;k.item=null;const v=vol(k);
+  if(k.isPlayer)toast(`戳腰子出動！目標：${tg.nm}`);else if(tg.isPlayer)toast(`${k.nm}要戳你腰子！快跑！`);
+  if(k.remote&&k.human)sendTo(k.owner,{t:'toast',text:`戳腰子出動！目標：${tg.nm}`});if(tg.remote&&tg.human)sendTo(tg.owner,{t:'toast',text:`${k.nm}要戳你腰子！快跑！`});}
+function useItem(k){const it=k.item;if(!it||k.rolling>0)return;k.item=null;const back=k.isPlayer&&!!keys.down;
+  if(net&&!net.host&&k===player&&it!=='fart'&&it!=='brat'){netSend({t:'use',it,back});
+    if(it==='poop'||it==='poop3')sFart(0.3,1.7,0.7);else if(it==='banana')sBeep(300,0.1,'triangle',0.2);else if(it==='mega')flash('#gas');return;}
+  doUse(k,it,back);}
+function doUse(k,it,back){const v=vol(k);
   if(it==='banana'){addHz('banana',makeBanana(),k.x-Math.sin(k.h)*3.8,k.z-Math.cos(k.h)*3.8,k,{life:40,r:2.2});sBeep(300,0.1,'triangle',0.2*v+0.01);}
-  else if(it==='poop'||it==='poop3'){const back=k.isPlayer&&keys.down;
+  else if(it==='poop'||it==='poop3'){
     for(const a of it==='poop3'?[-0.16,0,0.16]:[0]){const hh=k.h+a+(back?Math.PI:0),sp=back?28:Math.max(0,k.speed)+75;
       addHz('poop',makePoop(0.95),k.x+Math.sin(hh)*3.5,k.z+Math.cos(hh)*3.5,k,{vx:Math.sin(hh)*sp,vz:Math.cos(hh)*sp,y:1.6,vy:6,life:back?0.6:1.7,r:2.6,home:!back});}
     sFart(0.3,1.7,0.7*v);}
@@ -449,18 +492,25 @@ function useItem(k){const it=k.item;if(!it||k.rolling>0)return;k.item=null;const
     [523,392,523,392,659].forEach((f,i)=>setTimeout(()=>sBeep(f,0.1,'square',0.18*v+0.01),i*110));
     if(k.isPlayer){toast('略略略～打不到我！');$('#splat').classList.remove('on');$('#gas').classList.remove('on');}}}
 function hitKart(o,type,src){const v=vol(o);
+  if(o.remote){if(!net||!net.host||!o.human)return;
+    if(type==='gas'){if(o.gasCD>0)return;o.gasCD=1.4;}
+    sendTo(o.owner,{t:'hit',type,src:src?src.kid:-1});
+    if(type!=='gas'&&type!=='stun'&&type!=='mega'&&src&&src!==o){if(src.isPlayer)toast(`命中${o.nm}！`);else if(src.remote&&src.human)sendTo(src.owner,{t:'toast',text:`命中${o.nm}！`});}
+    return;}
   if(o.immT>0){if(type!=='gas'&&o.isPlayer)toast('略～沒用啦！');if(type!=='gas')sBeep(1200,0.08,'triangle',0.2*v+0.01);return;}
+  if(type==='stun'){o.stunT=2;o.boostT=0;o.fartT=0;if(o.isPlayer)shake=0.4;return;}
   if(type==='poke'){o.spinT=2;o.spinA=0;o.vy=13;o.y=0.01;o.speed*=0.3;o.boostT=0;o.fartT=0;sBoing(Math.max(v,src&&src.isPlayer?0.8:0));
-    if(o.isPlayer){shake=0.5;toast('唷！被戳腰子了！');}else toast(`唷！${o.a.name}被戳腰子！`);return;}
+    if(o.isPlayer){shake=0.5;toast('唷！被戳腰子了！');}else toast(`唷！${o.nm}被戳腰子！`);return;}
   if(o.y>2.5&&type!=='mega')return;
   if(type==='gas'){if(o.gasCD>0||o.boostT>0)return;o.gasCD=1.4;o.slowT=1.6;if(o.isPlayer){flash('#gas');toast('好臭！！');}return;}
   if(o.spinT>0.3)return;
   o.spinT=type==='mega'?1.7:type==='banana'?1.1:1.3;o.speed*=0.4;
   if(type==='mega'){o.vy=11;o.y=0.01;if(o.isPlayer)flash('#gas');}
-  if(type==='poop'||type==='ground'){o.hatT=5;sSplat(v);if(o.isPlayer){splat();toast(src&&src!==o&&type==='poop'?`被${src.a.name}的大便砸中！`:'踩到大便了！');}}
+  if(type==='poop'||type==='ground'){o.hatT=5;sSplat(v);if(o.isPlayer){splat();toast(src&&src!==o&&type==='poop'?`被${src.nm}的大便砸中！`:'踩到大便了！');}}
   if(type==='banana'){sSpin(v);if(o.isPlayer)toast('滑倒啦～');}
   if(o.isPlayer)shake=Math.max(shake,0.35);
-  else if(src&&src.isPlayer&&type!=='mega')toast(`命中${o.a.name}！`);}
+  else if(src&&src.isPlayer&&type!=='mega')toast(`命中${o.nm}！`);
+  else if(src&&src.remote&&src.human&&src!==o&&type!=='mega'&&net&&net.host)sendTo(src.owner,{t:'toast',text:`命中${o.nm}！`});}
 
 function updKart(k,dt,racing){
   let st=0,gs=0,br=false;
@@ -499,8 +549,10 @@ function updKart(k,dt,racing){
   const p2=P[k.idx],n2=NR[k.idx],l2=(k.x-p2.x)*n2.x+(k.z-p2.z)*n2.z,lim=W+22;
   if(Math.abs(l2)>lim){const d=l2-Math.sign(l2)*lim;k.x-=n2.x*d;k.z-=n2.z*d;k.speed*=0.9;}
   k.prog=k.lap*N+k.idx;
-  if(k.fartT>0){k.puffT-=dt;if(k.puffT<=0){k.puffT=0.07;spawnGas(k.x-Math.sin(k.h)*3.2+(Math.random()-.5),k.z-Math.cos(k.h)*3.2,k,1.1+Math.random()*0.8,3.5);}}
-  for(const b of boxes){if(b.t>0)continue;const dx=k.x-b.x,dz=k.z-b.z;if(dx*dx+dz*dz<12&&k.y<2){b.t=2.5;b.m.visible=false;if(!k.item&&!(k.rolling>0))giveItem(k);}}
+  if(k.fartT>0&&(!net||net.host)){k.puffT-=dt;if(k.puffT<=0){k.puffT=0.07;spawnGas(k.x-Math.sin(k.h)*3.2+(Math.random()-.5),k.z-Math.cos(k.h)*3.2,k,1.1+Math.random()*0.8,3.5);}}
+  for(const b of boxes){if(b.t>0)continue;const dx=k.x-b.x,dz=k.z-b.z;if(dx*dx+dz*dz<12&&k.y<2){b.t=2.5;b.m.visible=false;if(net&&!net.host)netSend({t:'box',i:boxes.indexOf(b)});if(!k.item&&!(k.rolling>0))giveItem(k);}}
+  kartVis(k,st);}
+function kartVis(k,st){
   k.root.position.set(k.x,0,k.z);k.root.rotation.y=k.h;k.model.rotation.y=k.spinA+clamp(wrapA(k.h-k.mv),-0.5,0.5)*0.6;k.model.position.x=k.stunT>0?Math.sin(clock*70)*0.18:0;
   k.model.position.y=k.y+(k.fartT>0?Math.abs(Math.sin(clock*25))*0.4:0);
   k.model.rotation.z=-st*0.09*Math.min(1,Math.abs(k.speed)/30);
@@ -510,7 +562,7 @@ function updKart(k,dt,racing){
     k.head.rotation.z=Math.sin(clock*14)*0.35;k.head.rotation.x=Math.sin(clock*9)*0.2;}else{k.head.rotation.z=0;k.head.rotation.x=0;}}
 
 function collide(){for(let i=0;i<karts.length;i++)for(let j=i+1;j<karts.length;j++){const a=karts[i],b=karts[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);
-  if(d<3.4&&d>0.001){const q=(3.4-d)/2,nx=dx/d,nz=dz/d;a.x-=nx*q;a.z-=nz*q;b.x+=nx*q;b.z+=nz*q;}}}
+  if(d<3.4&&d>0.001&&!(a.remote&&b.remote)){const q=3.4-d,nx=dx/d,nz=dz/d,wa=a.remote?0:b.remote?1:0.5,wb=b.remote?0:a.remote?1:0.5;a.x-=nx*q*wa;a.z-=nz*q*wa;b.x+=nx*q*wb;b.z+=nz*q*wb;}}}
 function updHazards(dt){
   for(let i=hz.length-1;i>=0;i--){const h=hz[i];h.age+=dt;h.life-=dt;
     if(h.type==='poke'){const tg=h.tg,dx=tg.x-h.x,dz=tg.z-h.z,d=Math.hypot(dx,dz);h.sp=Math.min(150,h.sp+60*dt);
@@ -530,7 +582,8 @@ function updHazards(dt){
       if(k===h.owner&&(h.type==='gas'||h.type==='poop'||h.age<0.6))continue;
       const dx=k.x-h.x,dz=k.z-h.z;if(dx*dx+dz*dz<(h.r+1.4)**2){if(h.type==='gas')hitKart(k,'gas',h.owner);else{hitKart(k,h.type,h.owner);gone=true;break;}}}
     if(gone){scene.remove(h.mesh);if(h.own)h.mesh.material.dispose();hz.splice(i,1);}}
-  for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.t+=dt;const u=f.t/f.dur;f.m.scale.setScalar(1+u*29);f.m.material.opacity=0.7*(1-u);if(u>=1){scene.remove(f.m);f.m.material.dispose();fx.splice(i,1);}}}
+}
+function updFx(dt){for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.t+=dt;const u=f.t/f.dur;f.m.scale.setScalar(1+u*29);f.m.material.opacity=0.7*(1-u);if(u>=1){scene.remove(f.m);f.m.material.dispose();fx.splice(i,1);}}}
 function order(){return karts.slice().sort((a,b)=>(b.finished-a.finished)||(a.finished&&b.finished?a.ft-b.ft:b.prog-a.prog));}
 
 /* ---------- HUD ---------- */
@@ -558,8 +611,10 @@ function hud(){if(!player)return;
   for(const k of karts.slice().sort(a=>a.isPlayer?1:-1)){const [a,b]=mp(k.x,k.z);mx.beginPath();mx.arc(a,b,k.isPlayer?10:7,0,Math.PI*2);mx.fillStyle='#'+k.a.kart.toString(16).padStart(6,'0');mx.fill();mx.lineWidth=3;mx.strokeStyle=k.isPlayer?'#fff':'#2b1a10';mx.stroke();}}
 function finishRace(){state='done';toast('抵達終點！');sBeep(660,0.15);setTimeout(()=>sBeep(880,0.3),160);setTimeout(showResults,1800);}
 function showResults(){const list=order();const r=list.indexOf(player);
-  $('#resList').innerHTML=list.map((k,i)=>`<li class="${k.isPlayer?'me':''}"><b>${i+1}</b><span>${k.a.name}${k.isPlayer?'（你）':''}</span><em>${k.finished?fmt(k.ft):'還在跑…'}</em></li>`).join('');
+  $('#resList').innerHTML=list.map((k,i)=>`<li class="${k.isPlayer?'me':''}"><b>${i+1}</b><span>${k.nm}${k.isPlayer?'（你）':''}</span><em>${k.finished?fmt(k.ft):'還在跑…'}</em></li>`).join('');
   $('#resTitle').textContent=r===0?'冠軍！臭氣沖天的勝利':r<3?`第 ${r+1} 名，上台領獎！`:`第 ${r+1} 名，下次多放幾個屁！`;
+  if(net){$('#again').textContent=net.host?'回房間再來一場':'等房主開下一場…';$('#again').disabled=!net.host;$('#change').textContent='離開房間';}
+  else{$('#again').textContent='再跑一次';$('#again').disabled=false;$('#change').textContent='換角色';}
   $('#res').classList.remove('hidden');$('#tc').classList.add('hidden');}
 
 /* ---------- camera + loop ---------- */
@@ -570,16 +625,118 @@ function updCamera(dt){const k=player;if(!k)return;const sx=Math.sin(k.h),cz=Mat
   const fov=70+(k.boostT>0?14:0)+Math.max(0,k.speed-40)*0.2;camera.fov+=(fov-camera.fov)*f;camera.updateProjectionMatrix();}
 function update(dt){clock+=dt;
   for(const b of boxes){b.m.rotation.y+=dt*1.5;b.m.rotation.x+=dt*0.7;b.m.position.y=1.8+Math.sin(clock*2+b.x)*0.3;if(b.t>0){b.t-=dt;if(b.t<=0)b.m.visible=true;}}
-  if(state==='select'){const k=player;if(k){const a=clock*0.45;camera.position.set(k.x+Math.sin(a)*9,4.2,k.z+Math.cos(a)*9);camera.lookAt(k.x,2.2,k.z);
+  if(state==='select'||state==='lobby'){const k=player;if(k){const a=clock*0.45;camera.position.set(k.x+Math.sin(a)*9,4.2,k.z+Math.cos(a)*9);camera.lookAt(k.x,2.2,k.z);
     k.head.rotation.y=Math.sin(clock*2)*0.35;k.model.position.y=Math.abs(Math.sin(clock*3))*0.25;if(camera.fov!==60){camera.fov=60;camera.updateProjectionMatrix();}}return;}
   if(state==='countdown'){countT-=dt;const c=Math.ceil(countT);if(c!==lastCount&&c>0){lastCount=c;showCount(c);sBeep(440,0.2);}
     if(countT<=0){state='race';showCount('出發！');sBeep(880,0.4);}}
   if(state!=='countdown')raceT+=dt;
   const racing=state!=='countdown';
-  for(const k of karts)updKart(k,dt,racing);
-  collide();updHazards(dt);updParts(dt);order().forEach((k,i)=>k.rank=i);updCamera(dt);hud();}
+  for(const k of karts){if(k.remote)updRemote(k,dt);else updKart(k,dt,racing);}
+  collide();if(!net||net.host)updHazards(dt);else updNetHz(dt);updFx(dt);netTick(dt);updParts(dt);order().forEach((k,i)=>k.rank=i);updCamera(dt);hud();}
 let last=performance.now();
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;update(dt);renderer.render(scene,camera);requestAnimationFrame(loop);}
+
+/* ---------- online: PeerJS rooms. Each player drives their own kart; the host runs AI, items and hazards ---------- */
+const myId=()=>net?(net.host?'host':net.id):'host';
+function banner(t,bad){if(!t){$('#err').classList.add('hidden');return;}window.__msg(t,bad);}
+function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();
+  const srcs=['peerjs.min.js','https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'];let i=0;
+  const next=()=>{if(i>=srcs.length)return rej(new Error('peer'));const sc=document.createElement('script');sc.src=srcs[i++];sc.onload=()=>window.Peer?res():next();sc.onerror=next;document.head.appendChild(sc);};next();});}
+const peerOpts=()=>Object.assign({debug:0},window.PEER_OPTS||{});
+const CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789',mkCode=()=>Array.from({length:4},()=>CODE_CH[Math.random()*CODE_CH.length|0]).join('');
+const NOWEB='連線對戰只能在 GitHub 網站版玩：scanhsu.github.io/animal-kart';
+async function createRoom(){initAudio();banner('建立房間中…');try{await loadPeer();}catch(e){return banner('連線元件載入失敗。'+NOWEB,true);}
+  const tryOpen=n=>{const code=mkCode();let peer;try{peer=new Peer('akart-'+code,peerOpts());}catch(e){return banner('建立房間失敗。'+NOWEB,true);}
+    peer.on('open',()=>{net={host:true,peer,code,conns:new Map(),ai:2,id:'host',players:[],sendT:0,resT:0};banner('');showLobby();});
+    peer.on('error',e=>{if(e.type==='unavailable-id'&&n<5){try{peer.destroy();}catch(_){}tryOpen(n+1);}else if(!net)banner('建立房間失敗（'+(e.type||'')+'）。'+NOWEB,true);});
+    peer.on('connection',c=>hostConn(c));
+    peer.on('disconnected',()=>{if(net&&net.peer===peer)try{peer.reconnect();}catch(_){}});};
+  tryOpen(0);}
+function hostConn(c){
+  c.on('open',()=>{if(!net||!net.host)return c.close();
+    if(net.conns.size>=3){c.send({t:'full'});setTimeout(()=>c.close(),400);return;}
+    if(state!=='lobby'){c.send({t:'busy'});setTimeout(()=>c.close(),400);return;}
+    net.conns.set(c.peer,{conn:c,animal:0});lobbySync();sBeep(660,0.1,'triangle',0.2);});
+  c.on('data',d=>hostMsg(c.peer,d));
+  c.on('close',()=>hostDrop(c.peer));c.on('error',()=>hostDrop(c.peer));}
+function hostDrop(id){if(!net||!net.host||!net.conns.has(id))return;net.conns.delete(id);
+  const k=karts.find(k=>k.owner===id);if(k){k.remote=false;k.owner='host';k.human=false;k.isPlayer=false;k.tx=undefined;toast(`${k.nm}斷線了，改由電腦代打`);}
+  if(state==='lobby')lobbySync();}
+function sendTo(id,m){const c=net&&net.conns&&net.conns.get(id);if(c&&c.conn.open)try{c.conn.send(m);}catch(_){}}
+function bcast(m){if(!net||!net.host)return;for(const id of net.conns.keys())sendTo(id,m);}
+function netSend(m){if(net&&!net.host&&net.conn&&net.conn.open)try{net.conn.send(m);}catch(_){}}
+function lobbyPlayers(){const ps=[{id:'host',animal:selIdx}];if(net&&net.host)for(const [id,c] of net.conns)ps.push({id,animal:c.animal});return ps;}
+function lobbySync(){if(!net||!net.host)return;net.players=lobbyPlayers().map((p,i)=>({id:p.id,animal:p.animal,name:`P${i+1} ${ANIMALS[p.animal].name}`}));
+  for(const id of net.conns.keys())sendTo(id,{t:'lobby',players:net.players,ai:net.ai,code:net.code});renderLobby();}
+function hostMsg(id,d){if(!net||!d)return;const c=net.conns.get(id);if(!c)return;
+  if(d.t==='hello'||d.t==='pick'){c.animal=clamp(d.animal|0,0,ANIMALS.length-1);if(state==='lobby')lobbySync();}
+  else if(d.t==='pose'){const k=karts.find(k=>k.owner===id&&k.remote);if(k)applyPose(k,d.p);}
+  else if(d.t==='use'){const k=karts.find(k=>k.owner===id&&k.remote);if(k&&state!=='countdown'&&ITEMS[d.it])doUse(k,d.it,!!d.back);}
+  else if(d.t==='box'){const b=boxes[d.i|0];if(b){b.t=2.5;b.m.visible=false;}}}
+async function joinRoom(code){code=(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4)return banner('房號是 4 個英數字',true);
+  initAudio();banner('連線到房間 '+code+'…');try{await loadPeer();}catch(e){return banner('連線元件載入失敗。'+NOWEB,true);}
+  let peer;try{peer=new Peer(peerOpts());}catch(e){return banner('連線失敗。'+NOWEB,true);}
+  let done=false;const kill=m=>{if(done)return;done=true;clearTimeout(to);banner(m,true);try{peer.destroy();}catch(_){}};
+  const to=setTimeout(()=>kill('連不上房間 '+code+'：請確認房號，並確定房主的遊戲畫面還開著。'),15000);
+  peer.on('open',id=>{const conn=peer.connect('akart-'+code,{reliable:true,serialization:'json'});
+    conn.on('open',()=>{if(done)return;done=true;clearTimeout(to);net={host:false,peer,conn,code,id,players:[],ai:0,sendT:0,resT:0};banner('');conn.send({t:'hello',animal:selIdx});showLobby();});
+    conn.on('data',clientMsg);
+    const lost=()=>{if(net&&net.conn===conn)netLost('和房主的連線中斷了');};conn.on('close',lost);conn.on('error',lost);});
+  peer.on('error',e=>{if(!done)kill(e.type==='peer-unavailable'?'找不到房間 '+code+'，請確認房號。':'連線失敗（'+(e.type||'')+'）。'+NOWEB);});}
+function clientMsg(d){if(!net||!d)return;
+  if(d.t==='full')netLost('房間已經滿了（最多 4 人）');
+  else if(d.t==='busy')netLost('這個房間正在比賽，請等這場結束再加入');
+  else if(d.t==='lobby'){net.players=d.players;net.ai=d.ai;net.code=d.code;if(state!=='lobby')showLobby();else renderLobby();}
+  else if(d.t==='start')startRace(d.roster);
+  else if(d.t==='snap')applySnap(d);
+  else if(d.t==='hit'){if(player&&state!=='lobby')hitKart(player,d.type,karts[d.src]||null);}
+  else if(d.t==='toast')toast(d.text);
+  else if(d.t==='fx')netFx(d);}
+function netFx(d){if(d.k==='ring'){ringAt(d.x,d.z);const v=player?Math.max(0,1-Math.hypot(d.x-player.x,d.z-player.z)/100):0;sFart(1.8,0.55,v);}
+  else if(d.k==='mom'){const k=karts[d.kid];if(k)momShow(d.line,k);}}
+function netLost(msg){if(!net)return;const p=net.peer;net=null;try{p.destroy();}catch(_){}banner(msg,true);setTimeout(()=>banner(''),5000);showSelect();}
+function leaveNet(){if(!net)return;const p=net.peer;net=null;try{p.destroy();}catch(_){}banner('');showSelect();}
+function showLobby(){state='lobby';buildPreview();for(const id of['#sel','#res','#hud','#tc'])$(id).classList.add('hidden');$('#lobby').classList.remove('hidden');
+  if(net&&net.host)lobbySync();else renderLobby();}
+function renderLobby(){if(!net)return;$('#lbCode').textContent=net.code||'----';const me=myId(),ps=net.players||[];
+  $('#lbPlayers').innerHTML=ps.map(p=>{const a=ANIMALS[p.animal]||ANIMALS[0];return `<li class="${p.id===me?'me':''}"><span class="dot" style="background:linear-gradient(${hex(a.color)} 58%,${hex(a.kart)} 58%)"></span><span>${p.name}${p.id===me?'（你）':''}${p.id==='host'?'　房主':''}</span></li>`;}).join('')
+    +(net.ai?`<li><span class="dot" style="background:#ccc"></span><span>電腦對手 × ${net.ai}</span></li>`:'');
+  $('#aiN').textContent=net.ai;$('#lbAi').classList.toggle('dis',!net.host);
+  $('#lbStart').textContent=net.host?'開始比賽！':'等房主開始…';$('#lbStart').disabled=!net.host;
+  $('#lbHint').textContent=net.host?`把房號或邀請連結傳給朋友，最多 4 人一起玩。人到齊後按開始。比賽中請不要切換 App，不然大家會卡住。`:'已經進房間了，選好動物等房主開始。';
+  renderCards('#lbCards');}
+function hostStart(){if(!net||!net.host||state!=='lobby')return;const ps=net.players.length?net.players:lobbyPlayers().map((p,i)=>({...p,name:`P${i+1} ${ANIMALS[p.animal].name}`}));
+  const used=new Set(ps.map(p=>p.animal)),pool=ANIMALS.map((_,i)=>i).filter(i=>!used.has(i)),roster=[];
+  for(let i=0;i<net.ai;i++){const a=pool.length?pool.splice(Math.random()*pool.length|0,1)[0]:Math.random()*ANIMALS.length|0;roster.push({animal:a,owner:'host',human:false,name:'電腦 '+ANIMALS[a].name});}
+  for(const p of ps)roster.push({animal:p.animal,owner:p.id,human:true,name:p.name});
+  bcast({t:'start',roster});startRace(roster);}
+const R2=v=>Math.round(v*100)/100;
+function poseOf(k){const f=(k.boostT>0?1:0)|(k.fartT>0?2:0)|(k.slowT>0?4:0)|(k.stunT>0?8:0)|(k.immT>0?16:0)|(k.hatT>0?32:0)|(k.spinT>0?64:0);
+  return [k.kid,R2(k.x),R2(k.z),R2(k.h),R2(k.mv),R2(k.y),R2(k.speed),R2(k.spinA),f,k.lap,k.idx,k.finished?1:0,R2(k.ft),R2(k.immT)];}
+function applyPose(k,p){k.tx=p[1];k.tz=p[2];k.th=p[3];k.tmv=p[4];k.ty=p[5];k.tsp=p[6];k.spinA=p[7];k.tAge=0;const f=p[8];
+  k.boostT=f&1?0.25:0;k.fartT=f&2?0.25:0;k.slowT=f&4?0.25:0;k.stunT=f&8?0.25:0;k.immT=f&16?Math.max(0.25,p[13]||0):0;k.hatT=f&32?0.25:0;k.spinT=f&64?0.25:0;
+  k.lap=p[9];k.idx=p[10];k.prog=p[9]*N+p[10];if(p[11]&&!k.finished){k.finished=true;k.ft=p[12];}}
+function updRemote(k,dt){for(const t of['boostT','fartT','slowT','stunT','immT','hatT','spinT','gasCD'])k[t]=Math.max(0,k[t]-dt);
+  if(k.tx!==undefined){k.tAge+=dt;const ex=Math.min(k.tAge,0.2),tx=k.tx+Math.sin(k.tmv)*k.tsp*ex,tz=k.tz+Math.cos(k.tmv)*k.tsp*ex;
+    if(Math.hypot(tx-k.x,tz-k.z)>25){k.x=tx;k.z=tz;}const f=Math.min(1,dt*10);k.x+=(tx-k.x)*f;k.z+=(tz-k.z)*f;k.h+=wrapA(k.th-k.h)*f;k.mv=k.tmv;k.y+=(k.ty-k.y)*Math.min(1,dt*15);k.speed=k.tsp;}
+  if(net&&net.host&&k.fartT>0){k.puffT-=dt;if(k.puffT<=0){k.puffT=0.07;spawnGas(k.x-Math.sin(k.h)*3.2,k.z-Math.cos(k.h)*3.2,k,1.1+Math.random()*0.8,3.5);}}
+  kartVis(k,0);}
+const HT={banana:0,poop:1,ground:2,gas:3,poke:4};
+function hzOf(h){return [h.id,HT[h.type],R2(h.x),R2(h.y),R2(h.z),R2(h.mesh.rotation.y),R2(h.mesh.scale.x),h.type==='gas'?R2(h.mesh.material.opacity):1];}
+function meshForTc(tc){if(tc===0)return makeBanana();if(tc===4)return makeFinger();if(tc===3)return new THREE.Mesh(SPH,new THREE.MeshLambertMaterial({color:0x9bd14a,transparent:true,opacity:0.5,depthWrite:false}));return makePoop(0.95);}
+function dropNetHz(id){const e=netHz.get(id);if(!e)return;scene.remove(e.m);if(e.tc===3)e.m.material.dispose();netHz.delete(id);}
+function applySnap(d){for(const p of d.k||[]){const k=karts[p[0]];if(k&&k!==player)applyPose(k,p);}
+  const seen=new Set();for(const a of d.h||[]){const [id,tc,x,y,z,ry,sc,op]=a;let e=netHz.get(id);
+    if(!e||e.tc!==tc){if(e)dropNetHz(id);e={tc,m:meshForTc(tc)};e.m.position.set(x,y,z);scene.add(e.m);netHz.set(id,e);}
+    e.x=x;e.y=y;e.z=z;e.m.rotation.y=ry;e.m.scale.setScalar(sc);if(tc===3)e.m.material.opacity=op;seen.add(id);}
+  for(const id of [...netHz.keys()])if(!seen.has(id))dropNetHz(id);
+  if(d.b)boxes.forEach((b,i)=>{if(d.b[i]==='1'){b.t=Math.max(b.t,0.15);b.m.visible=false;}});}
+function updNetHz(dt){const f=Math.min(1,dt*15);for(const e of netHz.values()){const p=e.m.position;p.x+=(e.x-p.x)*f;p.y+=(e.y-p.y)*f;p.z+=(e.z-p.z)*f;}}
+function netTick(dt){if(!net||state==='lobby'||state==='select')return;net.sendT-=dt;
+  if(net.sendT<=0){net.sendT=0.05;
+    if(net.host){if(net.conns.size)bcast({t:'snap',k:karts.map(poseOf),h:hz.map(hzOf),b:boxes.map(b=>b.t>0?1:0).join('')});}
+    else if(player)netSend({t:'pose',p:poseOf(player)});}
+  if(state==='done'&&!$('#res').classList.contains('hidden')){net.resT-=dt;if(net.resT<=0){net.resT=1;showResults();}}}
 
 /* ---------- input ---------- */
 const KM={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down'};
@@ -594,7 +751,7 @@ hold('#bBrake','down');
 /* floating joystick: press anywhere on the track view, drag left/right */
 let joySteer=0,joyId=null,joyX=0,joyY=0;const JR=56,JMAX=0.6,joy=$('#joy'),knob=$('#knob');
 function joyEnd(e){if(e.pointerId!==joyId)return;joyId=null;joySteer=0;joy.classList.remove('on');knob.style.transform='';}
-$('#c').addEventListener('pointerdown',e=>{if(state==='select'||joyId!==null)return;e.preventDefault();initAudio();
+$('#c').addEventListener('pointerdown',e=>{if(state==='select'||state==='lobby'||joyId!==null)return;e.preventDefault();initAudio();
   joyId=e.pointerId;joyX=e.clientX;joyY=e.clientY;joy.style.left=joyX+'px';joy.style.top=joyY+'px';joy.classList.add('on');knob.style.transform='';
   try{$('#c').setPointerCapture(e.pointerId);}catch(_){}$('#joyHint').classList.add('fade');});
 $('#c').addEventListener('pointermove',e=>{if(e.pointerId!==joyId)return;e.preventDefault();
@@ -605,14 +762,27 @@ $('#bItem').addEventListener('pointerdown',e=>{e.preventDefault();const el=e.cur
 $('#mute').addEventListener('click',()=>{muted=!muted;$('#mute').textContent=muted?'音效 關':'音效 開';});
 let startLock=0;function tapStart(e){if(e)e.preventDefault();const n=performance.now();if(n-startLock<600||state!=='select')return;startLock=n;startRace();}
 for(const ev of['click','pointerup','touchend'])$('#start').addEventListener(ev,tapStart);
-function tapAgain(e){if(e)e.preventDefault();const n=performance.now();if(n-startLock<600)return;startLock=n;startRace();}
+function tapAgain(e){if(e)e.preventDefault();const n=performance.now();if(n-startLock<600)return;startLock=n;if(net){if(net.host)showLobby();return;}startRace();}
 for(const ev of['click','pointerup','touchend'])$('#again').addEventListener(ev,tapAgain);
-$('#change').addEventListener('click',showSelect);
+$('#change').addEventListener('click',()=>{if(net)leaveNet();else showSelect();});
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
-function renderCards(){$('#cards').innerHTML=ANIMALS.map((a,i)=>`<button class="card" type="button" data-i="${i}" aria-pressed="${i===selIdx}"><span class="dot" style="background:linear-gradient(${hex(a.color)} 58%,${hex(a.kart)} 58%)"></span>${a.name}</button>`).join('');}
+function renderCards(sel='#cards'){$(sel).innerHTML=ANIMALS.map((a,i)=>`<button class="card" type="button" data-i="${i}" aria-pressed="${i===selIdx}"><span class="dot" style="background:linear-gradient(${hex(a.color)} 58%,${hex(a.kart)} 58%)"></span>${a.name}</button>`).join('');}
 $('#cards').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b)return;selIdx=+b.dataset.i;renderCards();buildPreview();sBeep(600,0.06,'triangle',0.2);});
 $('#hint').textContent=touchMode?'手機：自動油門，手指按住畫面會出現搖桿，左右拖動轉彎；右下「道具」丟東西、「剎車」減速':'鍵盤：← → 轉彎　↑ 油門　↓ 剎車　空白鍵 使用道具';
 if(innerHeight<600)$('#help').open=false;
+$('#mkRoom').addEventListener('click',()=>{if(state==='select')createRoom();});
+$('#joinRoom').addEventListener('click',()=>{$('#joinForm').classList.toggle('hidden');if(!$('#joinForm').classList.contains('hidden'))$('#code').focus();});
+$('#joinForm').addEventListener('submit',e=>{e.preventDefault();if(state==='select')joinRoom($('#code').value);});
+$('#lbCards').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b)return;selIdx=+b.dataset.i;renderCards();buildPreview();sBeep(600,0.06,'triangle',0.2);
+  if(net){if(net.host)lobbySync();else{netSend({t:'pick',animal:selIdx});const me=net.players.find(p=>p.id===net.id);if(me){me.animal=selIdx;}renderLobby();}}});
+$('#aiMinus').addEventListener('click',()=>{if(net&&net.host){net.ai=Math.max(0,net.ai-1);lobbySync();}});
+$('#aiPlus').addEventListener('click',()=>{if(net&&net.host){net.ai=Math.min(4,net.ai+1);lobbySync();}});
+$('#lbStart').addEventListener('click',hostStart);
+$('#lbLeave').addEventListener('click',leaveNet);
+$('#lbShare').addEventListener('click',async()=>{if(!net)return;const url=location.origin+location.pathname+'?room='+net.code,text=`來玩動物屁屁大賽車！房號 ${net.code}`;
+  try{if(navigator.share){await navigator.share({title:'動物屁屁大賽車',text,url});return;}}catch(_){return;}
+  try{await navigator.clipboard.writeText(text+' '+url);toast('邀請連結已複製');}catch(_){toast('房號：'+net.code);}});
+{const q=new URLSearchParams(location.search).get('room');if(q){$('#joinForm').classList.remove('hidden');$('#code').value=q.toUpperCase().slice(0,4);}}
 renderCards();showSelect();requestAnimationFrame(loop);
 document.getElementById('err').classList.add('hidden');
 }catch(e){window.__fail('遊戲啟動失敗，請截圖給我：'+(e&&e.message));}};

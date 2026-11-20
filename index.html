@@ -111,7 +111,7 @@ button:focus-visible{outline:4px solid #2f80ed;outline-offset:2px}
   window.addEventListener('error',function(e){show('遊戲出錯了，請截圖給我：'+(e.message||'')+' @'+(e.lineno||''),true);});
   var srcs=['three.min.js','https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js','https://unpkg.com/three@0.128.0/build/three.min.js'],i=0;
   function next(){if(i>=srcs.length){window.__fail('3D 引擎下載失敗：所有來源都連不上。可能是網路、廣告阻擋器或 Safari 內容阻擋擋住了 cdnjs / jsdelivr / unpkg。');return;}
-    show('3D 引擎載入中…（來源 '+(i+1)+'/'+srcs.length+'）'');var s=document.createElement('script');s.src=srcs[i++];
+    show('3D 引擎載入中…（來源 '+(i+1)+'/'+srcs.length+'）');var s=document.createElement('script');s.src=srcs[i++];
     s.onload=function(){if(window.THREE){window.__threeOK=1;if(window.boot)window.boot();}else next();};s.onerror=next;document.head.appendChild(s);}
   next();
 })();
